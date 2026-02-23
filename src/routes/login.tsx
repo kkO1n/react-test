@@ -1,9 +1,17 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/login")({
-  component: Login,
+  validateSearch: (search) => ({
+    redirect: (search.redirect as string) || "/",
+  }),
+  beforeLoad: ({ context, search }) => {
+    if (context.auth.isAuthenticated) {
+      throw redirect({ to: search.redirect });
+    }
+  },
+  component: LoginComponent,
 });
 
-function Login() {
-  return <div className="p-2">Login</div>;
+function LoginComponent() {
+  return <div>Логин</div>;
 }
