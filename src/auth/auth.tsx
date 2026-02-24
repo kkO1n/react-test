@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import React from "react";
 import { AuthContext } from "./useAuth";
+import { toast } from "sonner";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const getUserQuery = useQuery({
@@ -28,23 +29,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const postUserMutation = useMutation({
     mutationKey: ["auth"],
     mutationFn: async (credentials: { username: string; password: string }) => {
-      try {
-        const response = await fetch("https://dummyjson.com/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(credentials),
-        });
+      const response = await fetch("https://dummyjson.com/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(credentials),
+      });
 
-        if (!response.ok) {
-          throw new Error(response.statusText);
-        }
-
-        const data = await response.json();
-        localStorage.setItem("auth-token", data.accessToken);
-        return data;
-      } catch (error) {
-        console.error(error);
+      if (!response.ok) {
+        throw new Error(response.statusText);
       }
+
+      const data = await response.json();
+      localStorage.setItem("auth-token", data.accessToken);
+      return data;
+    },
+    onError: (error) => {
+      toast.error("Неправильный логин или пароль");
+      console.error(error);
     },
   });
 

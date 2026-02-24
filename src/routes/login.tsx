@@ -138,7 +138,15 @@ function LoginComponent() {
                   />
 
                   <Field>
-                    <Button type="submit">Войти</Button>
+                    <form.Subscribe
+                      selector={(formState) => formState.isSubmitting}
+                    >
+                      {(isSubmitting) => (
+                        <Button type="submit" disabled={isSubmitting}>
+                          Войти
+                        </Button>
+                      )}
+                    </form.Subscribe>
                   </Field>
                 </FieldGroup>
               </form>
