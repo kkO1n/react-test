@@ -27,7 +27,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Loader } from "lucide-react";
+import { CirclePlus, RefreshCcw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -49,6 +49,12 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { toast } from "sonner";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: Index,
@@ -172,7 +178,8 @@ function Index() {
 
   const firstItemIndexShown =
     table.getState().pagination.pageSize *
-    table.getState().pagination.pageIndex;
+      table.getState().pagination.pageIndex +
+    1;
 
   const lastItemIndexShow =
     table.getState().pagination.pageSize *
@@ -180,28 +187,35 @@ function Index() {
     table.getRowCount();
 
   return (
-    <div className="w-full p-10">
-      <div className="flex items-center py-4 justify-center">
-        <h1 className="mr-2 absolute left-10 scroll-m-20 text-2xl font-semibold tracking-tight">
+    <div className="w-full">
+      <div className="flex items-center p-8 justify-center border-y-20 border-muted relative">
+        <h1 className="mr-2 absolute left-8 scroll-m-20 text-2xl font-semibold tracking-tight">
           Товары
         </h1>
-        <Input
-          placeholder="Найти"
-          onChange={(event) => setSearch(event.target.value)}
-          className="max-w-1/2"
-        />
+        <InputGroup className="max-w-1/2 bg-muted border-none shadow-none h-11">
+          <InputGroupInput
+            placeholder="Найти"
+            onChange={(event) => setSearch(event.target.value)}
+          />
+          <InputGroupAddon>
+            <Search />
+          </InputGroupAddon>
+        </InputGroup>
       </div>
-      <div className="flex justify-between mb-10">
+      <div className="flex justify-between p-8">
         <h2 className="scroll-m-20 text-xl font-semibold tracking-tight ">
           Все позиции
         </h2>
         <div className="flex gap-2">
           <Button size="icon" variant="outline" onClick={() => refetch()}>
-            <Loader />
+            <RefreshCcw className="text-muted-foreground" />
           </Button>
           <Dialog>
             <DialogTrigger asChild>
-              <Button>Добавить</Button>
+              <Button>
+                <CirclePlus />
+                Добавить
+              </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
@@ -212,8 +226,8 @@ function Index() {
           </Dialog>
         </div>
       </div>
-      <div className="flex items-center justify-center">
-        <div className="overflow-hidden rounded-md border w-full">
+      <div className="flex items-center justify-center p-8">
+        <div className="overflow-hidden border-b w-full">
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
@@ -247,6 +261,10 @@ function Index() {
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
                     onClick={row.getToggleSelectedHandler()}
+                    className={cn(
+                      "border-l-2 border-l-transparent",
+                      row.getIsSelected() && "border-l-[#3c538e]",
+                    )}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
@@ -272,7 +290,7 @@ function Index() {
           </Table>
         </div>
       </div>
-      <div className="flex justify-between items-center mt-10">
+      <div className="flex justify-between items-center p-8">
         <div className="flex">
           <div className="text-muted-foreground flex-1 text-sm">
             Показано{" "}
@@ -325,11 +343,6 @@ function Index() {
   );
 }
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
-  data: TData[];
-}
-
 const columns: ColumnDef<Product>[] = [
   {
     id: "select",
@@ -340,6 +353,7 @@ const columns: ColumnDef<Product>[] = [
           (table.getIsSomePageRowsSelected() && "indeterminate")
         }
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        className="data-[state=checked]:bg-[#3c538e]"
         aria-label="Выбрать все позиции"
       />
     ),
@@ -348,6 +362,8 @@ const columns: ColumnDef<Product>[] = [
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Выбрать позицию"
+        className="data-[state=checked]:bg-[#3c538e]"
+        hideIcon
       />
     ),
   },
@@ -367,7 +383,9 @@ const columns: ColumnDef<Product>[] = [
             </AspectRatio>
           </div>
           <div className="space-y-1">
-            <p className="font-medium leading-none">{row.getValue("title")}</p>
+            <p className="font-semibold leading-none">
+              {row.getValue("title")}
+            </p>
             <p className="text-sm text-muted-foreground">
               {row.original.category}
             </p>

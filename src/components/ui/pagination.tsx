@@ -55,9 +55,12 @@ function PaginationLink({
       data-active={isActive}
       className={cn(
         buttonVariants({
-          variant: isActive ? "outline" : "ghost",
+          variant: isActive ? "default" : "outline",
           size,
         }),
+        "text-muted-foreground hover:text-muted-foreground",
+        isActive &&
+          "bg-[#797FEA] hover:bg-[#797FEA]/90 text-white hover:text-white",
         className,
       )}
       {...props}
