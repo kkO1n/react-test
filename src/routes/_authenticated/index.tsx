@@ -41,7 +41,7 @@ import {
 } from "@/components/ui/dialog";
 import { useForm } from "@tanstack/react-form";
 import z from "zod";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Field,
   FieldError,
@@ -86,15 +86,37 @@ function useDebounce(value: string, delay: number) {
   return debouncedValue;
 }
 
+function useSorting() {
+  const [sorting, setSorting] = useState<SortingState>(() => {
+    const localStorageItem = localStorage.getItem("sorting");
+
+    if (localStorageItem) {
+      return JSON.parse(localStorageItem);
+    }
+
+    return [{ id: "id", desc: false }];
+  });
+
+  const setSortingHandler = (
+    value: SortingState | ((prevState: SortingState) => SortingState),
+  ) => {
+    setSorting(value);
+    localStorage.setItem(
+      "sorting",
+      JSON.stringify(typeof value === "function" ? value(sorting) : value),
+    );
+  };
+
+  return [sorting, setSortingHandler] as const;
+}
+
 function Index() {
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 20,
   });
-  const [sorting, setSorting] = useState<SortingState>([
-    { id: "id", desc: false },
-  ]);
   const [search, setSearch] = useState("");
+  const [sorting, setSorting] = useSorting();
   const searchQuery = useDebounce(search, 500);
 
   const { data, refetch } = useQuery<ProductsQuery>({
@@ -408,7 +430,7 @@ function AddProductForm() {
     validators: {
       onSubmit: formSchema,
     },
-    onSubmit: async ({ value }) => {
+    onSubmit: async () => {
       toast("Добавлено");
     },
   });
