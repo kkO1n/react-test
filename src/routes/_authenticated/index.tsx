@@ -5,6 +5,9 @@ import {
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
+  getSortedRowModel,
+  type RowSelectionState,
+  type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
 
@@ -25,6 +28,10 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { Loader } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: Index,
@@ -49,42 +56,106 @@ type ProductsQuery = {
 };
 
 function Index() {
-  const { data } = useQuery<ProductsQuery>({
-    queryKey: ["products"],
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 20,
+  });
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: "id", desc: false },
+  ]);
+
+  const { data, refetch } = useQuery<ProductsQuery>({
+    queryKey: [
+      "products",
+      pagination.pageIndex,
+      pagination.pageSize,
+      sorting[0]?.id,
+      sorting[0]?.desc,
+      sorting.length,
+    ],
     queryFn: async () => {
-      const response = await fetch("https://dummyjson.com/products");
+      const response = await fetch(
+        `https://dummyjson.com/products?limit=${pagination.pageSize}&skip=${
+          pagination.pageIndex * pagination.pageSize
+        }${sorting.length > 0 ? `&sortBy=${sorting[0]?.id}` : ""}${
+          sorting.length > 0
+            ? `&order=${sorting[0]?.desc ? "desc" : "asc"}`
+            : ""
+        }`,
+      );
       return await response.json();
     },
   });
 
   const products = data?.products;
 
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+
   const table = useReactTable({
     data: products || [],
     columns,
+    state: {
+      sorting,
+      pagination,
+      rowSelection,
+    },
+
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    getRowId: (row) => row.id,
+
+    onPaginationChange: setPagination,
+    onRowSelectionChange: setRowSelection,
+    onSortingChange: setSorting,
+
+    manualPagination: true,
+    manualSorting: true,
+
+    pageCount: data?.total ? Math.ceil(data.total / pagination.pageSize) : 0,
   });
 
-  console.log(products?.[0]);
+  const firstItemIndexShown =
+    table.getState().pagination.pageSize *
+    table.getState().pagination.pageIndex;
+
+  const lastItemIndexShow =
+    table.getState().pagination.pageSize *
+      table.getState().pagination.pageIndex +
+    table.getRowCount();
 
   return (
-    <div>
-      <div className="flex items-center justify-center w-full p-10">
-        <div className="overflow-hidden rounded-md border w-1/2">
+    <div className="w-full p-10">
+      <div className="flex justify-between mb-10">
+        <h2>Все позиции</h2>
+        <div className="flex gap-2">
+          <Button size="icon" variant="outline" onClick={() => refetch()}>
+            <Loader />
+          </Button>
+          <Button>Добавить</Button>
+        </div>
+      </div>
+      <div className="flex items-center justify-center">
+        <div className="overflow-hidden rounded-md border w-full">
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
                     return (
-                      <TableHead key={header.id}>
+                      <TableHead
+                        key={header.id}
+                        onClick={header.column.getToggleSortingHandler()}
+                      >
                         {header.isPlaceholder
                           ? null
                           : flexRender(
                               header.column.columnDef.header,
                               header.getContext(),
                             )}
+                        {{
+                          asc: " 🔼",
+                          desc: " 🔽",
+                        }[header.column.getIsSorted() as string] ?? null}
                       </TableHead>
                     );
                   })}
@@ -97,6 +168,7 @@ function Index() {
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
+                    onClick={row.getToggleSelectedHandler()}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
@@ -122,50 +194,55 @@ function Index() {
           </Table>
         </div>
       </div>
-      <div className="text-muted-foreground flex-1 text-sm">
-        {table.getFilteredSelectedRowModel().rows.length} of{" "}
-        {table.getFilteredRowModel().rows.length} row(s) selected.
-      </div>
-      <div className="flex w-25 items-center justify-center text-sm font-medium">
-        Page {table.getState().pagination.pageIndex + 1} of{" "}
-        {table.getPageCount()}
-      </div>
-      <Pagination>
-        <PaginationContent>
-          {Array.from({ length: table.getPageCount() }, (_, index) => (
-            <PaginationItem key={index}>
-              <PaginationLink
-                onClick={() => table.setPageIndex(index)}
-                isActive={index === table.getState().pagination.pageIndex}
-              >
-                {index + 1}
-              </PaginationLink>
-            </PaginationItem>
-          ))}
+      <div className="flex justify-between items-center mt-10">
+        <div className="flex">
+          <div className="text-muted-foreground flex-1 text-sm">
+            Показано{" "}
+            <b>
+              {firstItemIndexShown}-{lastItemIndexShow}{" "}
+            </b>
+            из <b>{data?.total}</b>
+          </div>
+        </div>
+        <div>
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => table.previousPage()}
+                  className={
+                    table.getState().pagination.pageIndex <= 0
+                      ? "pointer-events-none opacity-50"
+                      : undefined
+                  }
+                />
+              </PaginationItem>
+              {Array.from({ length: table.getPageCount() }, (_, index) => (
+                <PaginationItem key={index}>
+                  <PaginationLink
+                    onClick={() => table.setPageIndex(index)}
+                    isActive={index === table.getState().pagination.pageIndex}
+                  >
+                    {index + 1}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
 
-          <PaginationItem>
-            <PaginationPrevious
-              onClick={() => table.previousPage()}
-              className={
-                table.getState().pagination.pageIndex <= 0
-                  ? "pointer-events-none opacity-50"
-                  : undefined
-              }
-            />
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationNext
-              onClick={() => table.nextPage()}
-              className={
-                table.getState().pagination.pageIndex >=
-                table.getPageCount() - 1
-                  ? "pointer-events-none opacity-50"
-                  : undefined
-              }
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => table.nextPage()}
+                  className={
+                    table.getState().pagination.pageIndex >=
+                    table.getPageCount() - 1
+                      ? "pointer-events-none opacity-50"
+                      : undefined
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      </div>
     </div>
   );
 }
@@ -177,10 +254,29 @@ interface DataTableProps<TData, TValue> {
 
 const columns: ColumnDef<Product>[] = [
   {
+    id: "select",
+    header: ({ table }) => (
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && "indeterminate")
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label="Выбрать все позиции"
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        aria-label="Выбрать позицию"
+      />
+    ),
+  },
+  {
     accessorKey: "title",
     header: "Наименование",
     cell: ({ row }) => {
-      console.log(row);
       return (
         <div className="flex gap-4 items-center">
           <div className="w-full max-w-12">
