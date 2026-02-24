@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   type ColumnDef,
+  type ColumnFiltersState,
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
@@ -30,8 +31,9 @@ import {
 } from "@/components/ui/pagination";
 import { Loader } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: Index,
@@ -55,6 +57,20 @@ type ProductsQuery = {
   products: Product[];
 };
 
+function useDebounce(value: string, delay: number) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
 function Index() {
   const [pagination, setPagination] = useState({
     pageIndex: 0,
@@ -63,6 +79,8 @@ function Index() {
   const [sorting, setSorting] = useState<SortingState>([
     { id: "id", desc: false },
   ]);
+  const [search, setSearch] = useState("");
+  const searchQuery = useDebounce(search, 500);
 
   const { data, refetch } = useQuery<ProductsQuery>({
     queryKey: [
@@ -72,12 +90,13 @@ function Index() {
       sorting[0]?.id,
       sorting[0]?.desc,
       sorting.length,
+      searchQuery,
     ],
     queryFn: async () => {
       const response = await fetch(
         `https://dummyjson.com/products?limit=${pagination.pageSize}&skip=${
           pagination.pageIndex * pagination.pageSize
-        }${sorting.length > 0 ? `&sortBy=${sorting[0]?.id}` : ""}${
+        }${searchQuery ? `&search=${searchQuery}` : ""}${sorting.length > 0 ? `&sortBy=${sorting[0]?.id}` : ""}${
           sorting.length > 0
             ? `&order=${sorting[0]?.desc ? "desc" : "asc"}`
             : ""
@@ -125,6 +144,14 @@ function Index() {
 
   return (
     <div className="w-full p-10">
+      <div className="flex items-center py-4 justify-center">
+        <h1 className="mr-2 absolute left-10">Товары</h1>
+        <Input
+          placeholder="Найти"
+          onChange={(event) => setSearch(event.target.value)}
+          className="max-w-1/2"
+        />
+      </div>
       <div className="flex justify-between mb-10">
         <h2>Все позиции</h2>
         <div className="flex gap-2">
