@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useForm } from "@tanstack/react-form";
 import { Input } from "../components/ui/input";
 import z from "zod";
@@ -15,9 +15,19 @@ import {
   FieldError,
   FieldGroup,
   FieldLabel,
+  FieldSeparator,
 } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import logoSvg from "@/assets/logo.svg";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group";
+import { Eye, EyeOff, Lock, User, X } from "lucide-react";
+import { useState } from "react";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (search) => ({
@@ -66,11 +76,14 @@ function LoginComponent() {
 
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-md">
         <div className="flex flex-col gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Добро пожаловать!</CardTitle>
+          <Card className="p-10 bg-linear-to-b from-gray-50 to-white outline-white outline-6 border-gray-100 border">
+            <CardHeader className="text-center">
+              <img src={logoSvg} alt="logo" className="m-auto" />
+              <CardTitle>
+                <h1 className="text-3xl font-bold">Добро пожаловать!</h1>
+              </CardTitle>
               <CardDescription>Пожалуйста, авторизуйтесь</CardDescription>
             </CardHeader>
             <CardContent>
@@ -90,18 +103,32 @@ function LoginComponent() {
                       return (
                         <Field data-invalid={isInvalid}>
                           <FieldLabel htmlFor={field.name}>Логин</FieldLabel>
-                          <Input
-                            id={field.name}
-                            name={field.name}
-                            value={field.state.value}
-                            onBlur={field.handleBlur}
-                            onChange={(e) => field.handleChange(e.target.value)}
-                            aria-invalid={isInvalid}
-                            placeholder="Введите логин"
-                          />
-                          <FieldDescription>
-                            Пожалуйста введите логин
-                          </FieldDescription>
+                          <InputGroup>
+                            <InputGroupInput
+                              id={field.name}
+                              name={field.name}
+                              value={field.state.value}
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                field.handleChange(e.target.value)
+                              }
+                              aria-invalid={isInvalid}
+                              placeholder="Введите логин"
+                              autoComplete="username"
+                            />
+                            <InputGroupAddon>
+                              <User />
+                            </InputGroupAddon>
+                            <InputGroupButton
+                              aria-label="clear-username"
+                              title="clear"
+                              size="icon-xs"
+                              className="mr-2"
+                              onClick={() => field.handleChange("")}
+                            >
+                              <X className="text-muted-foreground" />
+                            </InputGroupButton>
+                          </InputGroup>
                           {isInvalid && (
                             <FieldError errors={field.state.meta.errors} />
                           )}
@@ -119,19 +146,7 @@ function LoginComponent() {
                       return (
                         <Field data-invalid={isInvalid}>
                           <FieldLabel htmlFor={field.name}>Пароль</FieldLabel>
-                          <Input
-                            id={field.name}
-                            name={field.name}
-                            value={field.state.value}
-                            onBlur={field.handleBlur}
-                            onChange={(e) => field.handleChange(e.target.value)}
-                            aria-invalid={isInvalid}
-                            placeholder="Введите пароль"
-                            autoComplete="off"
-                          />
-                          <FieldDescription>
-                            Пожалуйста введите пароль
-                          </FieldDescription>
+                          <PasswordInput field={field} isInvalid={isInvalid} />
                           {isInvalid && (
                             <FieldError errors={field.state.meta.errors} />
                           )}
@@ -155,7 +170,10 @@ function LoginComponent() {
                             )
                           }
                         />
-                        <FieldLabel htmlFor={field.name}>
+                        <FieldLabel
+                          htmlFor={field.name}
+                          className="text-muted-foreground"
+                        >
                           Запомнить данные
                         </FieldLabel>
                       </Field>
@@ -167,12 +185,21 @@ function LoginComponent() {
                       selector={(formState) => formState.isSubmitting}
                     >
                       {(isSubmitting) => (
-                        <Button type="submit" disabled={isSubmitting}>
+                        <Button type="submit" size="lg" disabled={isSubmitting}>
                           Войти
                         </Button>
                       )}
                     </form.Subscribe>
                   </Field>
+
+                  <FieldSeparator badgeClassName="bg-white">или</FieldSeparator>
+
+                  <FieldDescription className="text-center text-md">
+                    Нет аккаунта?{" "}
+                    <Button variant="link" className="p-1 text-md" asChild>
+                      <Link to="/">Создать</Link>
+                    </Button>
+                  </FieldDescription>
                 </FieldGroup>
               </form>
             </CardContent>
@@ -180,5 +207,54 @@ function LoginComponent() {
         </div>
       </div>
     </div>
+  );
+}
+
+function PasswordInput({
+  field,
+  isInvalid,
+}: {
+  isInvalid: boolean;
+  field: {
+    name: string;
+    state: {
+      value: string;
+    };
+    handleChange: (value: string) => void;
+    handleBlur: () => void;
+  };
+}) {
+  const [showPassword, setShowPassword] = useState(false);
+
+  return (
+    <InputGroup>
+      <InputGroupInput
+        id={field.name}
+        name={field.name}
+        value={field.state.value}
+        onBlur={field.handleBlur}
+        onChange={(e) => field.handleChange(e.target.value)}
+        aria-invalid={isInvalid}
+        placeholder="Введите пароль"
+        autoComplete="current-password"
+        type={showPassword ? "text" : "password"}
+      />
+      <InputGroupAddon>
+        <Lock className="text-muted-foreground" />
+      </InputGroupAddon>
+      <InputGroupButton
+        aria-label="show-password"
+        title="show-password"
+        size="icon-xs"
+        className="mr-2"
+        onClick={() => setShowPassword((prev) => !prev)}
+      >
+        {showPassword ? (
+          <Eye className="text-muted-foreground" />
+        ) : (
+          <EyeOff className="text-muted-foreground" />
+        )}
+      </InputGroupButton>
+    </InputGroup>
   );
 }

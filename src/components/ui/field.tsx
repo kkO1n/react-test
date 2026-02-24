@@ -157,6 +157,7 @@ function FieldSeparator({
   ...props
 }: React.ComponentProps<"div"> & {
   children?: React.ReactNode;
+  badgeClassName?: string;
 }) {
   return (
     <div
@@ -171,7 +172,10 @@ function FieldSeparator({
       <Separator className="absolute inset-0 top-1/2" />
       {children && (
         <span
-          className="bg-background text-muted-foreground relative mx-auto block w-fit px-2"
+          className={cn(
+            "bg-background text-muted-foreground relative mx-auto block w-fit px-2",
+            props.badgeClassName,
+          )}
           data-slot="field-separator-content"
         >
           {children}

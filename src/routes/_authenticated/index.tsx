@@ -131,9 +131,9 @@ function Index() {
     ],
     queryFn: async () => {
       const response = await fetch(
-        `https://dummyjson.com/products?limit=${pagination.pageSize}&skip=${
+        `https://dummyjson.com/products/search?limit=${pagination.pageSize}&skip=${
           pagination.pageIndex * pagination.pageSize
-        }${searchQuery ? `&search=${searchQuery}` : ""}${sorting.length > 0 ? `&sortBy=${sorting[0]?.id}` : ""}${
+        }${searchQuery ? `&q=${searchQuery}` : ""}${sorting.length > 0 ? `&sortBy=${sorting[0]?.id}` : ""}${
           sorting.length > 0
             ? `&order=${sorting[0]?.desc ? "desc" : "asc"}`
             : ""
@@ -182,7 +182,9 @@ function Index() {
   return (
     <div className="w-full p-10">
       <div className="flex items-center py-4 justify-center">
-        <h1 className="mr-2 absolute left-10">Товары</h1>
+        <h1 className="mr-2 absolute left-10 scroll-m-20 text-2xl font-semibold tracking-tight">
+          Товары
+        </h1>
         <Input
           placeholder="Найти"
           onChange={(event) => setSearch(event.target.value)}
@@ -190,7 +192,9 @@ function Index() {
         />
       </div>
       <div className="flex justify-between mb-10">
-        <h2>Все позиции</h2>
+        <h2 className="scroll-m-20 text-xl font-semibold tracking-tight ">
+          Все позиции
+        </h2>
         <div className="flex gap-2">
           <Button size="icon" variant="outline" onClick={() => refetch()}>
             <Loader />
