@@ -9,7 +9,11 @@ interface User {
 export interface AuthState {
   isAuthenticated: boolean;
   user: User | null;
-  login: (username: string, password: string) => Promise<void>;
+  login: (
+    username: string,
+    password: string,
+    remember: boolean,
+  ) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthState | undefined>(undefined);

@@ -1,19 +1,21 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import React from "react";
 import { AuthContext } from "./useAuth";
 import { toast } from "sonner";
+import { useState } from "react";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const getUserQuery = useQuery({
-    queryKey: ["auth"],
-    queryFn: async () => {
-      const token = localStorage.getItem("auth-token");
+  const [sessionToken, setSessionToken] = useState<string | null>(
+    localStorage.getItem("auth-token"),
+  );
 
-      if (token) {
+  const getUserQuery = useQuery({
+    queryKey: ["auth", sessionToken],
+    queryFn: async () => {
+      if (sessionToken) {
         const response = await fetch("https://dummyjson.com/auth/me", {
           method: "GET",
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${sessionToken}`,
           },
         });
 
@@ -39,9 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error(response.statusText);
       }
 
-      const data = await response.json();
-      localStorage.setItem("auth-token", data.accessToken);
-      return data;
+      return await response.json();
     },
     onError: (error) => {
       toast.error("Неправильный логин или пароль");
@@ -57,9 +57,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const login = async (username: string, password: string) => {
-    await postUserMutation.mutateAsync({ username, password });
-    await getUserQuery.refetch();
+  const login = async (
+    username: string,
+    password: string,
+    remember: boolean,
+  ) => {
+    try {
+      const data = await postUserMutation.mutateAsync({ username, password });
+
+      if (remember) {
+        localStorage.setItem("auth-token", data.accessToken);
+      }
+      setSessionToken(data.accessToken);
+
+      await getUserQuery.refetch();
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (

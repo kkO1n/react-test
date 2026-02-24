@@ -17,6 +17,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (search) => ({
@@ -39,6 +40,7 @@ const formSchema = z.object({
     .string()
     .min(5, "Логин должен быть не менее 5 символов.")
     .max(32, "Логин должен быть не более 32 символов."),
+  remember: z.boolean(),
 });
 
 function LoginComponent() {
@@ -51,12 +53,13 @@ function LoginComponent() {
     defaultValues: {
       username: "",
       password: "",
+      remember: false,
     },
     validators: {
       onSubmit: formSchema,
     },
     onSubmit: async ({ value }) => {
-      await auth.login(value.username, value.password);
+      await auth.login(value.username, value.password, value.remember);
       navigate({ to: redirect });
     },
   });
@@ -135,6 +138,28 @@ function LoginComponent() {
                         </Field>
                       );
                     }}
+                  />
+
+                  <form.Field
+                    name="remember"
+                    children={(field) => (
+                      <Field orientation="horizontal">
+                        <Checkbox
+                          id={field.name}
+                          name={field.name}
+                          checked={field.state.value}
+                          onBlur={field.handleBlur}
+                          onCheckedChange={(value) =>
+                            field.handleChange(
+                              value === "indeterminate" ? false : value,
+                            )
+                          }
+                        />
+                        <FieldLabel htmlFor={field.name}>
+                          Запомнить данные
+                        </FieldLabel>
+                      </Field>
+                    )}
                   />
 
                   <Field>
