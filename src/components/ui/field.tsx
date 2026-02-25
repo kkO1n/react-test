@@ -154,6 +154,7 @@ function FieldDescription({ className, ...props }: React.ComponentProps<"p">) {
 function FieldSeparator({
   children,
   className,
+  badgeClassName,
   ...props
 }: React.ComponentProps<"div"> & {
   children?: React.ReactNode;
@@ -174,7 +175,7 @@ function FieldSeparator({
         <span
           className={cn(
             "bg-background text-muted-foreground relative mx-auto block w-fit px-2",
-            props.badgeClassName,
+            badgeClassName,
           )}
           data-slot="field-separator-content"
         >

@@ -1,4 +1,5 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import type { PaginationState } from "@tanstack/react-table";
 
 interface UseGetProductsParams {
   pagination: {
@@ -8,6 +9,10 @@ interface UseGetProductsParams {
   sorting: { id: string; desc: boolean }[];
   searchQuery?: string;
 }
+
+type SortParams = { sortBy: `${string}.${"asc" | "desc"}` };
+type Filters<T> = Partial<T & PaginationState & SortParams>;
+export type ProductsFilters = Filters<Product>;
 
 export function useGetProductsQuery({
   pagination,

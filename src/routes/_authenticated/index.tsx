@@ -49,16 +49,18 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group";
-import { cn } from "@/lib/utils";
-import { useDebounce, useSorting } from "@/lib/hooks";
+import { cn, sortByToState, stateToSortBy } from "@/lib/utils";
+import { useDebounce, useFilters } from "@/lib/hooks";
 import {
   useGetProductsQuery,
   type Product,
+  type ProductsFilters,
 } from "@/api/products/useGetProductsQuery";
 import { AddProductForm } from "@/components/add-product-form";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: Index,
+  validateSearch: () => ({}) as ProductsFilters,
 });
 
 function Index() {
@@ -66,15 +68,17 @@ function Index() {
     pageIndex: 0,
     pageSize: 20,
   });
-  const [sorting, setSorting] = useSorting();
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   const [search, setSearch] = useState("");
   const searchQuery = useDebounce(search, 500);
 
+  const { filters, setFilters } = useFilters(Route.id);
+  const sortingState = sortByToState(filters.sortBy);
+
   const { data, refetch } = useGetProductsQuery({
     pagination,
-    sorting,
+    sorting: sortingState,
     searchQuery,
   });
 
@@ -82,7 +86,7 @@ function Index() {
     data: data?.products || [],
     columns,
     state: {
-      sorting,
+      sorting: sortingState,
       pagination,
       rowSelection,
     },
@@ -93,7 +97,13 @@ function Index() {
 
     onPaginationChange: setPagination,
     onRowSelectionChange: setRowSelection,
-    onSortingChange: setSorting,
+    onSortingChange: (updaterOrValue) => {
+      const newSortingState =
+        typeof updaterOrValue === "function"
+          ? updaterOrValue(sortingState)
+          : updaterOrValue;
+      return setFilters({ sortBy: stateToSortBy(newSortingState) });
+    },
 
     manualPagination: true,
     manualSorting: true,

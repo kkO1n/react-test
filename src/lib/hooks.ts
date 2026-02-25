@@ -1,5 +1,11 @@
-import type { SortingState } from "@tanstack/react-table";
+import {
+  type RouteIds,
+  type RegisteredRouter,
+  getRouteApi,
+  useNavigate,
+} from "@tanstack/react-router";
 import { useState, useEffect } from "react";
+import { cleanEmptyParams } from "./utils";
 
 export function useDebounce(value: string, delay: number) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -15,26 +21,18 @@ export function useDebounce(value: string, delay: number) {
   return debouncedValue;
 }
 
-export function useSorting() {
-  const [sorting, setSorting] = useState<SortingState>(() => {
-    const localStorageItem = localStorage.getItem("sorting");
+export function useFilters<T extends RouteIds<RegisteredRouter["routeTree"]>>(
+  routeId: T,
+) {
+  const routeApi = getRouteApi<T>(routeId);
+  const navigate = useNavigate();
+  const filters = routeApi.useSearch();
 
-    if (localStorageItem) {
-      return JSON.parse(localStorageItem);
-    }
+  const setFilters = (partialFilters: Partial<typeof filters>) =>
+    navigate({
+      to: ".",
+      search: (prev) => cleanEmptyParams({ ...prev, ...partialFilters }),
+    });
 
-    return [{ id: "id", desc: false }];
-  });
-
-  const setSortingHandler = (
-    value: SortingState | ((prevState: SortingState) => SortingState),
-  ) => {
-    setSorting(value);
-    localStorage.setItem(
-      "sorting",
-      JSON.stringify(typeof value === "function" ? value(sorting) : value),
-    );
-  };
-
-  return [sorting, setSortingHandler] as const;
+  return { filters, setFilters };
 }

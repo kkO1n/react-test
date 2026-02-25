@@ -69,7 +69,7 @@ function LoginComponent() {
     },
     onSubmit: async ({ value }) => {
       await auth.login(value.username, value.password, value.remember);
-      navigate({ to: redirect });
+      navigate({ to: redirect, from: "/" });
     },
   });
 
