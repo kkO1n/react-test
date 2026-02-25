@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   type ColumnDef,
@@ -6,7 +5,6 @@ import {
   getCoreRowModel,
   getPaginationRowModel,
   type RowSelectionState,
-  type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
 
@@ -27,11 +25,18 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { CirclePlus, RefreshCcw, Search } from "lucide-react";
+import {
+  ArrowDownNarrowWide,
+  ArrowUpNarrowWide,
+  CircleEllipsis,
+  CirclePlus,
+  Plus,
+  RefreshCcw,
+  Search,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogTrigger,
@@ -39,122 +44,42 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useForm } from "@tanstack/react-form";
-import z from "zod";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
-import { toast } from "sonner";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group";
 import { cn } from "@/lib/utils";
+import { useDebounce, useSorting } from "@/lib/hooks";
+import {
+  useGetProductsQuery,
+  type Product,
+} from "@/api/products/useGetProductsQuery";
+import { AddProductForm } from "@/components/add-product-form";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: Index,
 });
-
-type Product = {
-  id: string;
-  title: string;
-  brand: string;
-  category: string;
-  price: string;
-  rating: string;
-  sku: string;
-  thumbnail: string;
-};
-
-type ProductsQuery = {
-  limit: number;
-  skip: 0;
-  total: number;
-  products: Product[];
-};
-
-function useDebounce(value: string, delay: number) {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => clearTimeout(handler);
-  }, [value, delay]);
-
-  return debouncedValue;
-}
-
-function useSorting() {
-  const [sorting, setSorting] = useState<SortingState>(() => {
-    const localStorageItem = localStorage.getItem("sorting");
-
-    if (localStorageItem) {
-      return JSON.parse(localStorageItem);
-    }
-
-    return [{ id: "id", desc: false }];
-  });
-
-  const setSortingHandler = (
-    value: SortingState | ((prevState: SortingState) => SortingState),
-  ) => {
-    setSorting(value);
-    localStorage.setItem(
-      "sorting",
-      JSON.stringify(typeof value === "function" ? value(sorting) : value),
-    );
-  };
-
-  return [sorting, setSortingHandler] as const;
-}
 
 function Index() {
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 20,
   });
-  const [search, setSearch] = useState("");
   const [sorting, setSorting] = useSorting();
-  const searchQuery = useDebounce(search, 500);
-
-  const { data, refetch } = useQuery<ProductsQuery>({
-    queryKey: [
-      "products",
-      pagination.pageIndex,
-      pagination.pageSize,
-      sorting[0]?.id,
-      sorting[0]?.desc,
-      sorting.length,
-      searchQuery,
-    ],
-    queryFn: async () => {
-      const response = await fetch(
-        `https://dummyjson.com/products/search?limit=${pagination.pageSize}&skip=${
-          pagination.pageIndex * pagination.pageSize
-        }${searchQuery ? `&q=${searchQuery}` : ""}${sorting.length > 0 ? `&sortBy=${sorting[0]?.id}` : ""}${
-          sorting.length > 0
-            ? `&order=${sorting[0]?.desc ? "desc" : "asc"}`
-            : ""
-        }`,
-      );
-      return await response.json();
-    },
-  });
-
-  const products = data?.products;
-
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
+  const [search, setSearch] = useState("");
+  const searchQuery = useDebounce(search, 500);
+
+  const { data, refetch } = useGetProductsQuery({
+    pagination,
+    sorting,
+    searchQuery,
+  });
+
   const table = useReactTable({
-    data: products || [],
+    data: data?.products || [],
     columns,
     state: {
       sorting,
@@ -238,16 +163,29 @@ function Index() {
                         key={header.id}
                         onClick={header.column.getToggleSortingHandler()}
                       >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
-                        {{
-                          asc: " 🔼",
-                          desc: " 🔽",
-                        }[header.column.getIsSorted() as string] ?? null}
+                        <div className="flex items-center gap-2">
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext(),
+                              )}
+
+                          {{
+                            asc: (
+                              <ArrowDownNarrowWide
+                                className="text-muted-foreground"
+                                width={16}
+                              />
+                            ),
+                            desc: (
+                              <ArrowUpNarrowWide
+                                className="text-muted-foreground"
+                                width={16}
+                              />
+                            ),
+                          }[header.column.getIsSorted() as string] ?? null}
+                        </div>
                       </TableHead>
                     );
                   })}
@@ -282,7 +220,7 @@ function Index() {
                     colSpan={columns.length}
                     className="h-24 text-center"
                   >
-                    No results.
+                    Нет данных
                   </TableCell>
                 </TableRow>
               )}
@@ -313,6 +251,7 @@ function Index() {
                   }
                 />
               </PaginationItem>
+
               {Array.from({ length: table.getPageCount() }, (_, index) => (
                 <PaginationItem key={index}>
                   <PaginationLink
@@ -432,162 +371,22 @@ const columns: ColumnDef<Product>[] = [
       return <div className="text-right font-medium">{formatted}</div>;
     },
   },
+  {
+    id: "actions",
+    cell: () => {
+      return (
+        <div className="flex items-center gap-2">
+          <Button
+            className="h-5 rounded-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Plus />
+          </Button>
+          <button onClick={(e) => e.stopPropagation()}>
+            <CircleEllipsis className="text-muted-foreground/50" />
+          </button>
+        </div>
+      );
+    },
+  },
 ];
-
-const formSchema = z.object({
-  title: z.string().nonempty("Наименование обязательно"),
-  brand: z.string(),
-  price: z.number().nonnegative("Цена не может быть отрицательной"),
-  sku: z.string(),
-});
-
-function AddProductForm() {
-  const form = useForm({
-    defaultValues: {
-      title: "",
-      brand: "",
-      price: 0,
-      sku: "",
-    },
-    validators: {
-      onSubmit: formSchema,
-    },
-    onSubmit: async () => {
-      toast("Добавлено");
-    },
-  });
-
-  return (
-    <Card>
-      <CardContent>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            form.handleSubmit();
-          }}
-        >
-          <FieldGroup>
-            <form.Field
-              name="title"
-              children={(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid;
-
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Наименование</FieldLabel>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      aria-invalid={isInvalid}
-                      placeholder="Введите наименование"
-                    />
-                    {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
-                    )}
-                  </Field>
-                );
-              }}
-            />
-
-            <form.Field
-              name="brand"
-              children={(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid;
-
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Вендор</FieldLabel>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      aria-invalid={isInvalid}
-                      placeholder="Введите вендора"
-                    />
-                    {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
-                    )}
-                  </Field>
-                );
-              }}
-            />
-
-            <form.Field
-              name="sku"
-              children={(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid;
-
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Артикул</FieldLabel>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      aria-invalid={isInvalid}
-                      placeholder="Введите артикул"
-                    />
-                    {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
-                    )}
-                  </Field>
-                );
-              }}
-            />
-
-            <form.Field
-              name="price"
-              children={(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid;
-
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Цена</FieldLabel>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      className="bg-background text-center"
-                      min="1"
-                      onChange={(e) =>
-                        field.handleChange(Number(e.target.value))
-                      }
-                      type="number"
-                      aria-invalid={isInvalid}
-                      placeholder="Введите цену"
-                    />
-                    {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
-                    )}
-                  </Field>
-                );
-              }}
-            />
-
-            <Field>
-              <form.Subscribe selector={(formState) => formState.isSubmitting}>
-                {(isSubmitting) => (
-                  <Button type="submit" disabled={isSubmitting}>
-                    Добавить
-                  </Button>
-                )}
-              </form.Subscribe>
-            </Field>
-          </FieldGroup>
-        </form>
-      </CardContent>
-    </Card>
-  );
-}

@@ -1,6 +1,5 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useForm } from "@tanstack/react-form";
-import { Input } from "../components/ui/input";
 import z from "zod";
 import {
   Card,
@@ -26,8 +25,8 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group";
-import { Eye, EyeOff, Lock, User, X } from "lucide-react";
-import { useState } from "react";
+import { User, X } from "lucide-react";
+import { PasswordInput } from "@/components/password-input";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (search) => ({
@@ -207,54 +206,5 @@ function LoginComponent() {
         </div>
       </div>
     </div>
-  );
-}
-
-function PasswordInput({
-  field,
-  isInvalid,
-}: {
-  isInvalid: boolean;
-  field: {
-    name: string;
-    state: {
-      value: string;
-    };
-    handleChange: (value: string) => void;
-    handleBlur: () => void;
-  };
-}) {
-  const [showPassword, setShowPassword] = useState(false);
-
-  return (
-    <InputGroup>
-      <InputGroupInput
-        id={field.name}
-        name={field.name}
-        value={field.state.value}
-        onBlur={field.handleBlur}
-        onChange={(e) => field.handleChange(e.target.value)}
-        aria-invalid={isInvalid}
-        placeholder="Введите пароль"
-        autoComplete="current-password"
-        type={showPassword ? "text" : "password"}
-      />
-      <InputGroupAddon>
-        <Lock className="text-muted-foreground" />
-      </InputGroupAddon>
-      <InputGroupButton
-        aria-label="show-password"
-        title="show-password"
-        size="icon-xs"
-        className="mr-2"
-        onClick={() => setShowPassword((prev) => !prev)}
-      >
-        {showPassword ? (
-          <Eye className="text-muted-foreground" />
-        ) : (
-          <EyeOff className="text-muted-foreground" />
-        )}
-      </InputGroupButton>
-    </InputGroup>
   );
 }

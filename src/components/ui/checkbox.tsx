@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 function Checkbox({
   className,
+  hideIcon,
   ...props
 }: React.ComponentProps<typeof CheckboxPrimitive.Root> & {
   hideIcon?: boolean;
@@ -19,7 +20,7 @@ function Checkbox({
       )}
       {...props}
     >
-      {!props.hideIcon && (
+      {!hideIcon && (
         <CheckboxPrimitive.Indicator
           data-slot="checkbox-indicator"
           className="grid place-content-center text-current transition-none"
