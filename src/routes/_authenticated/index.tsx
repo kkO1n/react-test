@@ -35,7 +35,7 @@ import {
   Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -63,15 +63,21 @@ export const Route = createFileRoute("/_authenticated/")({
   validateSearch: () => ({}) as ProductsFilters,
 });
 
+const initialPagination = {
+  pageIndex: 0,
+  pageSize: 20,
+};
+
 function Index() {
-  const [pagination, setPagination] = useState({
-    pageIndex: 0,
-    pageSize: 20,
-  });
+  const [pagination, setPagination] = useState(initialPagination);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   const [search, setSearch] = useState("");
   const searchQuery = useDebounce(search, 500);
+
+  useEffect(() => {
+    setPagination(initialPagination);
+  }, [searchQuery]);
 
   const { filters, setFilters } = useFilters(Route.id);
   const sortingState = sortByToState(filters.sortBy);

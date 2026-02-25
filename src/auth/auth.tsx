@@ -69,8 +69,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem("auth-token", data.accessToken);
       }
       setSessionToken(data.accessToken);
-
-      await getUserQuery.refetch();
     } catch (error) {
       console.error(error);
     }
